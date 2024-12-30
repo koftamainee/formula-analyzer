@@ -306,8 +306,8 @@ err_t calculate_postfix_expression(const String postfix_exp,
             //         }
             //         break;
             //     }
-            // }
         }
-
-        return EXIT_SUCCESS;
     }
+
+    return EXIT_SUCCESS;
+}
