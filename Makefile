@@ -24,12 +24,16 @@ f=""
 
 default: run
 
-compile: $(TARGET_PATH)
+compile: $(TARGET_PATH) files
 
 $(TARGET_PATH): $(OBJS)
 	@mkdir -p $(BUILD_DIR)
 	@echo -e "${COLOR_GREEN}Linking $(TARGET)${COLOR_RESET}"
 	@$(CC) $(CFLAGS) -o $(TARGET_PATH) $(OBJS)
+
+files:
+	@cp -r files/ $(BUILD_DIR)/
+
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(OBJ_DIR)
@@ -53,4 +57,4 @@ run: compile
 valgrind: compile
 	@cd $(BUILD_DIR) && valgrind  --leak-check=full --show-leak-kinds=all $(TARGET) $(f)
 
-.PHONY: compile
+.PHONY: compile files

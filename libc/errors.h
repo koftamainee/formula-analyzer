@@ -27,4 +27,7 @@ typedef int err_t;
 #define INVALID_CLI_ARGUMENT (21)
 #define ZERO_DIVISION (22)
 
+#define ERROR_MAX_LOGGER_COUNT_REACHED (23)
+#define NOT_ENOUTH_ARGUMENTS (24)
+
 #endif
