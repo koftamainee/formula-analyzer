@@ -6,7 +6,6 @@
 #include "../libc/logger.h"
 #include "../libc/stack.h"
 #include "../libc/types.h"
-#include "../libc/utils.h"
 
 int operation_comparer(void const *first, void const *second) {
     return (*((operation **)first))->representation -
@@ -81,8 +80,9 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                         return err;
                     }
                     if (err == STACK_IS_EMPTY) {
-                        log_warn("stack_is_empty");
-                        break;
+                        log_error("stack_is_empty");
+                        stack_free(operators);
+                        return INVALID_BRACES;
                     }
                     for_stack = *(char *)p_for_stack->data;
                     err = stack_pop(operators);
@@ -119,8 +119,9 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                     }
 
                     if (err == STACK_IS_EMPTY) {
-                        log_warn("stack_is_empty");
-                        // TODO: do smth idk
+                        log_error("stack_is_empty");
+                        stack_free(operators);
+                        return INVALID_BRACES;
                     }
 
                     for_stack = *(char *)p_for_stack->data;
@@ -138,8 +139,9 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                         return err;
                     }
                     if (err == STACK_IS_EMPTY) {
-                        log_warn("stack is empty");
-                        // TODO: do smth idk
+                        log_error("stack is empty");
+                        stack_free(operators);
+                        return INVALID_BRACES;
                     }
 
                     err = string_add(postfix_exp, for_stack);
@@ -186,8 +188,8 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             return err;
         }
         if (err == STACK_IS_EMPTY) {
-            log_warn("stack is empty");
-            // break;
+            log_error("stack is empty");
+            return INVALID_BRACES;
         }
         for_stack = *(char *)p_for_stack->data;
         err = stack_pop(operators);
@@ -212,6 +214,12 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             stack_free(operators);
             return err;
         }
+    }
+
+    if (!stack_is_empty(operators)) {
+        log_error("transformation done, stack is not emtpy, invalid braces");
+        stack_free(operators);
+        return INVALID_BRACES;
     }
 
     stack_free(operators);

@@ -9,6 +9,34 @@
 #include "../libc/logger.h"
 #include "postfix_notation.h"
 
+int calculate_priorities(int operator) {
+    switch (operator) {
+        case '+':
+        case '-':
+            return 0;
+        case '*':
+        case '/':
+        case '%':
+            return 1;
+        case '~':
+            return 2;
+        case '^':
+            return 3;
+        case '(':
+            return INT_MIN;
+        default:
+            return -1;
+    }
+}
+
+int calculate_is_operator(int c) {
+    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '~' ||
+        c == '^') {
+        return 1;
+    }
+    return 0;
+}
+
 err_t process_calculate_file(FILE *fin) {
     if (fin == NULL) {
         log_error("fin ptr is NULL");
@@ -72,34 +100,6 @@ err_t process_calculate_line(char *line) {
     string_free(postfix);
 
     return EXIT_SUCCESS;
-}
-
-int calculate_priorities(int operator) {
-    switch (operator) {
-        case '+':
-        case '-':
-            return 0;
-        case '*':
-        case '/':
-        case '%':
-            return 1;
-        case '~':
-            return 2;
-        case '^':
-            return 3;
-        case '(':
-            return INT_MIN;
-        default:
-            return -1;
-    }
-}
-
-int calculate_is_operator(int c) {
-    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '~' ||
-        c == '^') {
-        return 1;
-    }
-    return 0;
 }
 
 err_t calculate_infix_to_postfix(const String infix_exp, String *postfix_exp) {
