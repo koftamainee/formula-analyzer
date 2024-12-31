@@ -288,3 +288,17 @@ void string_fprint(FILE *fout, const String str) {
         fputc(str[i], fout);
     }
 }
+
+err_t string_add_str(String *str, const char *s) {
+    if (str == NULL || s == NULL) {
+        return DEREFERENCING_NULL_PTR;
+    }
+    while (*s) {
+        err_t err = string_add(str, *s);
+        if (err) {
+            return err;
+        }
+        s++;
+    }
+    return EXIT_SUCCESS;
+}

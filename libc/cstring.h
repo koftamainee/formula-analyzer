@@ -43,4 +43,6 @@ int string_c_str(const char *haystack, const String needle);
 
 int string_grow(String *str, size_t new_size);
 
+int string_add_str(String *str, const char *s);
+
 #endif
