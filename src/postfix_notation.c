@@ -66,15 +66,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
         current_p = infix_exp + i;
         ie = infix_exp[i];
 
-        // if (!is_operand(ie)) {
-        //     if (is_operand(prev)) {
-        //         err = string_add(postfix_exp, ' ');
-        //         if (err) {
-        //             log_error("failed to push to the string");
-        //             stack_free(operators);
-        //             return err;
-        //         }
-        //     }
         buffer_len = is_operator(current_p);
         if (buffer_len > 0) {  // found operator
 
@@ -247,8 +238,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                     return err;
                 }
             }
-        } else if (is_operand(ie)) {  // found invalid symbol
-
+        } else if (is_operand(ie)) {
             err = string_add(postfix_exp, ie);
             if (err) {
                 log_error("failed to push to the string");
@@ -280,9 +270,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             return err;
         }
         if (err == STACK_IS_EMPTY) {
-            log_error("stack_is_empty");
-            stack_free(operators);
-            return INVALID_BRACES;
+            break;
         }
         buffer = *(String *)p_for_stack->data;
 
@@ -296,6 +284,12 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             break;
         }
         err = string_cat(postfix_exp, &buffer);
+        if (err) {
+            log_error("failed to cat to the string");
+            stack_free(operators);
+            return err;
+        }
+        err = string_add(postfix_exp, ' ');
         if (err) {
             log_error("failed to cat to the string");
             stack_free(operators);

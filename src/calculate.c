@@ -7,7 +7,28 @@
 
 #include "../libc/cstring.h"
 #include "../libc/logger.h"
+#include "expression_tree.h"
 #include "postfix_notation.h"
+
+int calculate_is_op_binary(const String op) {
+    const char *valid_binary_operators[] = {"+", "*", "/",   "%",
+                                            "~", "^", "cos", "||"};
+    size_t num_operators =
+        sizeof(valid_binary_operators) / sizeof(valid_binary_operators[0]);
+    size_t i = 0;
+
+    if (strncmp(op, "~", 1) == 0) {
+        return 0;  // is unary
+    }
+
+    for (i = 0; i < num_operators; i++) {
+        if (strncmp(op, valid_binary_operators[i],
+                    strlen(valid_binary_operators[i])) == 0) {
+            return 1;
+        }
+    }
+    return -1;  // is not an operator
+}
 
 int calculate_priorities(const String operator) {
     if (string_cmp_c(operator, "+") == 0 || string_cmp_c(operator, "-") == 0) {
@@ -32,8 +53,8 @@ int calculate_priorities(const String operator) {
 }
 
 int calculate_is_operator(const char *op) {
-    const char *valid_operators[] = {"+", "-", "*",   "/",  "%",
-                                     "~", "^", "cos", "sin"};
+    const char *valid_operators[] = {"+", "-", "*",   "/", "%",
+                                     "~", "^", "cos", "||"};
     size_t num_operators = sizeof(valid_operators) / sizeof(valid_operators[0]);
     size_t i = 0;
 
@@ -81,6 +102,7 @@ err_t process_calculate_line(char *line) {
 
     err_t err = 0;
     String infix = NULL, postfix = NULL;
+    expression_tree *tree = NULL;
 
     infix = string_from(line);
     if (infix == NULL) {
@@ -106,6 +128,12 @@ err_t process_calculate_line(char *line) {
     printf("\n\n");
 
     // TODO: build arithmetic tree, calculate exp
+    err = expression_tree_fill_with_data_from_postfix_expression(
+        &tree, postfix, calculate_is_op_binary);
+
+    expression_tree_print(tree);
+
+    expression_tree_free(tree);
 
     string_free(infix);
     string_free(postfix);
