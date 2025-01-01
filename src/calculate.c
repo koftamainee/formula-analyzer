@@ -50,8 +50,7 @@ int calculate_priorities(const String operator) {
 }
 
 int calculate_is_operator(const char *op) {
-    const char *valid_operators[] = {"+", "-", "*",   "/", "%",
-                                     "~", "^", "cos", "||"};
+    const char *valid_operators[] = {"+", "-", "*", "/", "%", "~", "^"};
     size_t num_operators = sizeof(valid_operators) / sizeof(valid_operators[0]);
     size_t i = 0;
 
@@ -86,7 +85,8 @@ err_t process_calculate_file(file_to_process *file) {
         printf("Processing %zu line in %s file: \n", current_line,
                file->filename);
         err = process_calculate_line(line);
-        if (err != EXIT_SUCCESS && err != INVALID_BRACES) {
+        if (err != EXIT_SUCCESS && err != INVALID_BRACES &&
+            err != INVALID_SYMBOL) {
             if (fout != NULL) {
                 fclose(fout);
             }
@@ -101,8 +101,22 @@ err_t process_calculate_file(file_to_process *file) {
                     return OPENING_THE_FILE_ERROR;
                 }
             }
-            fprintf(fout, "%s : %zu - Invalid braces placement error.\n",
-                    file->filename, current_line);
+            fprintf(fout, "%s : %zu : [%s] - Invalid braces placement error.\n",
+                    file->filename, current_line, line);
+            printf("Error occured. Skipping...\n");
+            current_line++;
+            continue;
+        } else if (err == INVALID_SYMBOL) {
+            if (fout == NULL) {
+                sprintf(error_filename, "%s.errors", file->filename);
+                fout = fopen(error_filename, "w");
+                if (fout == NULL) {
+                    log_error("Error while openning file for errors");
+                    return OPENING_THE_FILE_ERROR;
+                }
+            }
+            fprintf(fout, "%s : %zu : [%s] - Invalid symbol occurence error.\n",
+                    file->filename, current_line, line);
             printf("Error occured. Skipping...\n");
             current_line++;
             continue;

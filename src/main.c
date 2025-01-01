@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     if (err) {
         return err;
     }
-    log_set_level(LOG_INFO);
+    log_set_level(LOG_TRACE);
     err = u_list_init(&files, sizeof(file_to_process), file_to_process_free);
     if (err) {
         u_list_free(files);

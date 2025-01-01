@@ -38,7 +38,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
     char *current_p = NULL;
     String buffer = NULL,
            for_stack = NULL;  // Buffer for multi-character operators
-    size_t buffer_len = 0;
+    size_t buffer_len = 0, exp_len = string_len(infix_exp);
 
     err =
         stack_init(&operators, sizeof(String *), postfix_notation_string_free);
@@ -62,7 +62,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
     }
     buffer = NULL;
 
-    for (i = 0; i < string_len(infix_exp); ++i) {
+    for (i = 0; i < exp_len; ++i) {
         current_p = infix_exp + i;
         ie = infix_exp[i];
 
@@ -108,10 +108,8 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
 
                 for_stack = *(String *)p_for_stack->data;
                 if (priority_mapper(for_stack) < priority_mapper(buffer)) {
-                    log_debug("first < second, break");
                     break;
                 }
-                log_debug("first > second, push");
 
                 err = string_cat(postfix_exp, &for_stack);
                 if (err) {
@@ -212,10 +210,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                 }
             }
         } else if (is_operand(ie)) {
-            while (1) {
-                if (!is_operand(ie)) {
-                    break;
-                }
+            while (is_operand(ie) && i < exp_len) {
                 err = string_add(postfix_exp, ie);
                 if (err) {
                     log_error("failed to push to the string");
