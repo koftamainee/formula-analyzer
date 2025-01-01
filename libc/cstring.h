@@ -31,6 +31,7 @@ void string_print(const String str);
 void string_fprint(FILE *fout, const String str);
 
 int string_cmp(const String str1, const String str2);
+int string_cmp_c(const String str1, const char *str2);
 int string_lex_cmp(const String str1, const String str2);
 
 int string_cpy(String *dest, const String *src);

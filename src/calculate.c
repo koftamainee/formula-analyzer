@@ -9,30 +9,38 @@
 #include "../libc/logger.h"
 #include "postfix_notation.h"
 
-int calculate_priorities(int operator) {
-    switch (operator) {
-        case '+':
-        case '-':
-            return 0;
-        case '*':
-        case '/':
-        case '%':
-            return 1;
-        case '~':
-            return 2;
-        case '^':
-            return 3;
-        case '(':
-            return INT_MIN;
-        default:
-            return -1;
+int calculate_priorities(const String operator) {
+    if (string_cmp_c(operator, "+") == 0 || string_cmp_c(operator, "-") == 0) {
+        return 0;
+    } else if (string_cmp_c(operator, "*") == 0 ||
+               string_cmp_c(operator, "/") == 0 ||
+               string_cmp_c(operator, "%") == 0) {
+        return 1;
+    } else if (string_cmp_c(operator, "~") == 0) {
+        return 2;
+    } else if (string_cmp_c(operator, "^") == 0) {
+        return 3;
+    } else if (string_cmp_c(operator, "(") == 0) {
+        return INT_MIN;
+    } else if (string_cmp_c(operator, "cos") == 0 ||
+               string_cmp_c(operator, "||") == 0) {
+        return 52;  // Example of custom priorities for multi-character
+                    // operators
+    } else {
+        return -1;  // Invalid operator
     }
 }
 
-int calculate_is_operator(int c) {
-    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '~' ||
-        c == '^') {
-        return 1;
+int calculate_is_operator(const char *op) {
+    const char *valid_operators[] = {"+", "-", "*",   "/",  "%",
+                                     "~", "^", "cos", "sin"};
+    size_t num_operators = sizeof(valid_operators) / sizeof(valid_operators[0]);
+    size_t i = 0;
+
+    for (i = 0; i < num_operators; i++) {
+        if (strncmp(op, valid_operators[i], strlen(valid_operators[i])) == 0) {
+            return strlen(valid_operators[i]);
+        }
     }
     return 0;
 }
@@ -51,6 +59,9 @@ err_t process_calculate_file(FILE *fin) {
         len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') {
             line[len - 1] = '\0';  // delete '\n' symbol
+        }
+        if (line[0] == '\0') {
+            continue;
         }
         err = process_calculate_line(line);
         if (err) {

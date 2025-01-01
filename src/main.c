@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,33 +6,6 @@
 #include "calculate.h"
 #include "cli.h"
 #include "table.h"
-
-int is_operator(int c) {
-    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '~' ||
-        c == '^')
-        return 1;
-    return 0;
-}
-
-int priorities(int operator) {
-    switch (operator) {
-        case '+':
-        case '-':
-            return 0;
-        case '*':
-        case '/':
-        case '%':
-            return 1;
-        case '~':
-            return 2;
-        case '^':
-            return 3;
-        case '(':
-            return INT_MIN;
-        default:
-            return -1;
-    }
-}
 
 int main(int argc, char *argv[]) {
     err_t err = 0;

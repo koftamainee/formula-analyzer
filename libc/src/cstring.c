@@ -91,6 +91,28 @@ int string_cmp(String str1, String str2) {
     }
     return 0;
 }
+
+int string_cmp_c(const String str1, const char *str2) {
+    size_t len1, len2;
+    int i;
+    len1 = string_len(str1);
+    len2 = strlen(str2);
+
+    if (len1 != len2) {
+        if (len1 >= len2) {
+            return str1[len2];
+        } else {
+            return -str2[len1];
+        }
+    }
+    for (i = 0; i < len1; ++i) {
+        if (str1[i] != str2[i]) {
+            return str1[i] - str2[i];
+        }
+    }
+    return 0;
+}
+
 int string_lex_cmp(String str1, String str2) {
     size_t len1, len2, min;
     int i;

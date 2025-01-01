@@ -1,6 +1,7 @@
 #include "postfix_notation.h"
 
 #include <ctype.h>
+#include <string.h>
 #include <time.h>
 
 #include "../libc/logger.h"
@@ -12,8 +13,16 @@ int operation_comparer(void const *first, void const *second) {
            (*((operation **)second))->representation;
 }
 
+void postfix_notation_string_free(void *s) {
+    String *st = s;
+    string_free(*st);
+    free(st);
+    return;
+}
+
 err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
-                       int (*is_operator)(int c), int (*priority_mapper)(int c),
+                       int (*is_operator)(const char *op),
+                       int (*priority_mapper)(const String op),
                        String *postfix_exp) {
     if (infix_exp == NULL || is_operand == NULL || is_operator == NULL ||
         priority_mapper == NULL || postfix_exp == NULL) {
@@ -21,40 +30,54 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
         return DEREFERENCING_NULL_PTR;
     }
 
-    char ie, prev = ' ';
     stack *operators = NULL;
-    char for_stack = 0;
     stack_item *p_for_stack = NULL;
     err_t err = 0;
-    size_t i = 0;
+    size_t i = 0, j = 0;
+    char prev = ' ', ie = 0;
+    char *current_p = NULL;
+    String buffer = NULL,
+           for_stack = NULL;  // Buffer for multi-character operators
+    size_t buffer_len = 0;
 
-    err = stack_init(&operators, sizeof(char), free);
+    err =
+        stack_init(&operators, sizeof(String *), postfix_notation_string_free);
     if (err) {
         log_error("failed to initialize stack");
         return err;
     }
 
-    for_stack = '(';
-    err = stack_push(operators, &for_stack);
+    buffer = string_from("(");
+    if (buffer == NULL) {
+        stack_free(operators);
+        log_error("Failed to allocate memory for buffer");
+        return MEMORY_ALLOCATION_ERROR;
+    }
+    err = stack_push(operators, &buffer);
     if (err) {
         log_error("failed to push to stack");
+        string_free(buffer);
         stack_free(operators);
         return err;
     }
+    buffer = NULL;
 
     for (i = 0; i < string_len(infix_exp); ++i) {
+        current_p = infix_exp + i;
         ie = infix_exp[i];
 
-        log_trace("ie: %c", ie);
+        // if (!is_operand(ie)) {
+        //     if (is_operand(prev)) {
+        //         err = string_add(postfix_exp, ' ');
+        //         if (err) {
+        //             log_error("failed to push to the string");
+        //             stack_free(operators);
+        //             return err;
+        //         }
+        //     }
+        buffer_len = is_operator(current_p);
+        if (buffer_len > 0) {  // found operator
 
-        if (is_operand(ie)) {
-            err = string_add(postfix_exp, ie);
-            if (err) {
-                log_error("failed to push to the string");
-                stack_free(operators);
-                return err;
-            }
-        } else {
             if (is_operand(prev)) {
                 err = string_add(postfix_exp, ' ');
                 if (err) {
@@ -63,115 +86,184 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                     return err;
                 }
             }
-            if (ie == '(') {
-                for_stack = ie;
-                err = stack_push(operators, &for_stack);
+
+            buffer = string_init();
+            if (buffer == NULL) {
+                stack_free(operators);
+                log_error("Failed to allocate memory for buffer");
+                return MEMORY_ALLOCATION_ERROR;
+            }
+            for (j = 0; j < buffer_len; ++j) {
+                err = string_add(&buffer, current_p[j]);
                 if (err) {
-                    log_error("failed to push to stack");
+                    log_error("failed push to string");
+                    stack_free(operators);
+                    string_free(buffer);
+                    return err;
+                }
+                i++;
+            }
+
+            i--;
+            prev = ie;
+            ie = infix_exp[i];
+            current_p = infix_exp + i;
+
+            while (1) {
+                err = stack_top(operators, &p_for_stack);
+                if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
+                    log_error("top from stack failed: %d", err);
+                    stack_free(operators);
+                    string_free(buffer);
+                    return err;
+                }
+
+                if (err == STACK_IS_EMPTY) {
+                    log_error("stack_is_empty");
+                    stack_free(operators);
+                    string_free(buffer);
+                    return INVALID_BRACES;
+                }
+
+                for_stack = *(String *)p_for_stack->data;
+                if (priority_mapper(for_stack) < priority_mapper(buffer)) {
+                    log_debug("first < second, break");
+                    break;
+                }
+                log_debug("first > second, push");
+
+                err = string_cat(postfix_exp, &for_stack);
+                if (err) {
+                    log_error("failed to cat to the string");
+                    stack_free(operators);
+                    string_free(buffer);
+                    return err;
+                }
+
+                err = string_add(postfix_exp, ' ');
+                if (err) {
+                    log_error("failed to push to the string");
+                    stack_free(operators);
+                    string_free(buffer);
+                    return err;
+                }
+                err = stack_pop(operators);
+                if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
+                    log_error("pop from stack failed");
                     stack_free(operators);
                     return err;
                 }
-            } else if (ie == ')') {  // or \0 mb
-                while (1) {
-                    err = stack_top(operators, &p_for_stack);
-                    if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
-                        log_error("top from stack failed");
-                        stack_free(operators);
-                        return err;
-                    }
-                    if (err == STACK_IS_EMPTY) {
-                        log_error("stack_is_empty");
-                        stack_free(operators);
-                        return INVALID_BRACES;
-                    }
-                    for_stack = *(char *)p_for_stack->data;
+                for_stack = NULL;
+                if (err == STACK_IS_EMPTY) {
+                    log_error("stack is empty");
+                    stack_free(operators);
+                    return INVALID_BRACES;
+                }
+            }
+            err = stack_push(operators, &buffer);
+            if (err) {
+                log_error("failed push to stack");
+                stack_free(operators);
+                string_free(buffer);
+                return err;
+            }
+
+            buffer = NULL;
+            continue;
+        } else if (ie == '(') {
+            if (is_operand(prev)) {
+                err = string_add(postfix_exp, ' ');
+                if (err) {
+                    log_error("failed to push to the string");
+                    stack_free(operators);
+                    return err;
+                }
+            }
+
+            buffer = string_from("(");
+            if (buffer == NULL) {
+                stack_free(operators);
+                log_error("Failed to allocate memory for buffer");
+                return MEMORY_ALLOCATION_ERROR;
+            }
+            err = stack_push(operators, &buffer);
+            if (err) {
+                log_error("failed to push to stack");
+                string_free(buffer);
+                stack_free(operators);
+                return err;
+            }
+            buffer = NULL;
+
+        } else if (ie == ')') {
+            if (is_operand(prev)) {
+                err = string_add(postfix_exp, ' ');
+                if (err) {
+                    log_error("failed to push to the string");
+                    stack_free(operators);
+                    return err;
+                }
+            }
+            while (1) {
+                err = stack_top(operators, &p_for_stack);
+                if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
+                    log_error("top from stack failed");
+                    stack_free(operators);
+                    return err;
+                }
+                if (err == STACK_IS_EMPTY) {
+                    log_error("stack_is_empty");
+                    stack_free(operators);
+                    return INVALID_BRACES;
+                }
+                buffer = *(String *)p_for_stack->data;
+
+                if (buffer[0] == '(') {
                     err = stack_pop(operators);
                     if (err) {
                         log_error("failed pop from stack");
                         stack_free(operators);
                         return err;
                     }
-
-                    if (for_stack == '(') {
-                        break;
-                    }
-                    err = string_add(postfix_exp, for_stack);
-                    if (err) {
-                        log_error("failed to push to the string");
-                        stack_free(operators);
-                        return err;
-                    }
-                    err = string_add(postfix_exp, ' ');
-                    if (err) {
-                        log_error("failed to push to the string");
-                        stack_free(operators);
-                        return err;
-                    }
+                    break;
                 }
-            } else if (is_operator(ie)) {
-                log_debug("found operator");
-                while (1) {
-                    err = stack_top(operators, &p_for_stack);
-                    if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
-                        log_error("top from stack failed: %d", err);
-                        stack_free(operators);
-                        return err;
-                    }
-
-                    if (err == STACK_IS_EMPTY) {
-                        log_error("stack_is_empty");
-                        stack_free(operators);
-                        return INVALID_BRACES;
-                    }
-
-                    for_stack = *(char *)p_for_stack->data;
-                    log_debug("comparison %c %c", for_stack, ie);
-                    if (priority_mapper(for_stack) < priority_mapper(ie)) {
-                        log_debug("first < second, break");
-                        break;
-                    }
-                    log_debug("first > second, push");
-
-                    err = stack_pop(operators);
-                    if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
-                        log_error("pop from stack failed");
-                        stack_free(operators);
-                        return err;
-                    }
-                    if (err == STACK_IS_EMPTY) {
-                        log_error("stack is empty");
-                        stack_free(operators);
-                        return INVALID_BRACES;
-                    }
-
-                    err = string_add(postfix_exp, for_stack);
-                    if (err) {
-                        log_error("failed to push to the string");
-                        stack_free(operators);
-                        return err;
-                    }
-                    err = string_add(postfix_exp, ' ');
-                    if (err) {
-                        log_error("failed to push to the string");
-                        stack_free(operators);
-                        return err;
-                    }
-                }
-                for_stack = ie;
-                err = stack_push(operators, &ie);
+                err = string_cat(postfix_exp, &buffer);
                 if (err) {
-                    log_error("failed push to stack");
+                    log_error("failed to cat to the string");
                     stack_free(operators);
                     return err;
                 }
-            } else if (ie != ' ' && !is_operand(ie)) {
-                log_error("invalid symbol found: %c", ie);
+                err = string_add(postfix_exp, ' ');
+                if (err) {
+                    log_error("failed to push to the string");
+                    stack_free(operators);
+                    return err;
+                }
+
+                err = stack_pop(operators);
+                if (err) {
+                    log_error("failed pop from stack");
+                    stack_free(operators);
+                    return err;
+                }
             }
+        } else if (is_operand(ie)) {  // found invalid symbol
+
+            err = string_add(postfix_exp, ie);
+            if (err) {
+                log_error("failed to push to the string");
+                stack_free(operators);
+                return err;
+            }
+        } else if (ie != ' ') {
+            log_error("invalid symbol '%c' found", ie);
+            stack_free(operators);
+            return INVALID_SYMBOL;
         }
         prev = ie;
     }
 
-    if (is_operand(prev) || is_operator(prev)) {
+    if (is_operand(prev)) {
         err = string_add(postfix_exp, ' ');
         if (err) {
             log_error("failed to push to the string");
@@ -188,29 +280,30 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             return err;
         }
         if (err == STACK_IS_EMPTY) {
-            log_error("stack is empty");
+            log_error("stack_is_empty");
+            stack_free(operators);
             return INVALID_BRACES;
         }
-        for_stack = *(char *)p_for_stack->data;
+        buffer = *(String *)p_for_stack->data;
+
+        if (buffer[0] == '(') {
+            err = stack_pop(operators);
+            if (err) {
+                log_error("failed pop from stack");
+                stack_free(operators);
+                return err;
+            }
+            break;
+        }
+        err = string_cat(postfix_exp, &buffer);
+        if (err) {
+            log_error("failed to cat to the string");
+            stack_free(operators);
+            return err;
+        }
         err = stack_pop(operators);
         if (err) {
             log_error("failed pop from stack");
-            stack_free(operators);
-            return err;
-        }
-
-        if (for_stack == '(') {
-            break;
-        }
-        err = string_add(postfix_exp, for_stack);
-        if (err) {
-            log_error("failed to push to the string");
-            stack_free(operators);
-            return err;
-        }
-        err = string_add(postfix_exp, ' ');
-        if (err) {
-            log_error("failed to push to the string");
             stack_free(operators);
             return err;
         }
@@ -223,7 +316,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
     }
 
     stack_free(operators);
-
     return EXIT_SUCCESS;
 }
 
