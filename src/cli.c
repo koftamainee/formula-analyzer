@@ -41,6 +41,7 @@ err_t parse_cli_arguments(u_list *files, int argc, char *argv[]) {
                 log_error("failed to open %s file", argv[i]);
                 return OPENING_THE_FILE_ERROR;
             }
+            fp.filename = argv[i];
             err = u_list_insert(files, 0, &fp);
             if (err) {
                 log_error("failed to push file to the list.");
@@ -54,6 +55,7 @@ err_t parse_cli_arguments(u_list *files, int argc, char *argv[]) {
                 log_error("failed to open %s file", argv[i]);
                 return OPENING_THE_FILE_ERROR;
             }
+            fp.filename = argv[i];
             err = u_list_insert(files, 0, &fp);
             if (err) {
                 log_error("failed to push file to the list.");

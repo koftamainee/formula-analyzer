@@ -11,6 +11,7 @@ typedef enum { calculate, table } file_operation;
 typedef struct {
     FILE *data;
     file_operation op;
+    char *filename;
 } file_to_process;
 
 err_t parse_cli_arguments(u_list *files, int argc, char *argv[]);

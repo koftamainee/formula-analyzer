@@ -34,7 +34,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
     stack_item *p_for_stack = NULL;
     err_t err = 0;
     size_t i = 0, j = 0;
-    char prev = ' ', ie = 0;
+    char ie = 0;
     char *current_p = NULL;
     String buffer = NULL,
            for_stack = NULL;  // Buffer for multi-character operators
@@ -69,15 +69,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
         buffer_len = is_operator(current_p);
         if (buffer_len > 0) {  // found operator
 
-            if (is_operand(prev)) {
-                err = string_add(postfix_exp, ' ');
-                if (err) {
-                    log_error("failed to push to the string");
-                    stack_free(operators);
-                    return err;
-                }
-            }
-
             buffer = string_init();
             if (buffer == NULL) {
                 stack_free(operators);
@@ -96,7 +87,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             }
 
             i--;
-            prev = ie;
             ie = infix_exp[i];
             current_p = infix_exp + i;
 
@@ -110,7 +100,7 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                 }
 
                 if (err == STACK_IS_EMPTY) {
-                    log_error("stack_is_empty");
+                    log_error("stack_is_empty, invalid braces placement");
                     stack_free(operators);
                     string_free(buffer);
                     return INVALID_BRACES;
@@ -162,15 +152,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             buffer = NULL;
             continue;
         } else if (ie == '(') {
-            if (is_operand(prev)) {
-                err = string_add(postfix_exp, ' ');
-                if (err) {
-                    log_error("failed to push to the string");
-                    stack_free(operators);
-                    return err;
-                }
-            }
-
             buffer = string_from("(");
             if (buffer == NULL) {
                 stack_free(operators);
@@ -187,14 +168,6 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             buffer = NULL;
 
         } else if (ie == ')') {
-            if (is_operand(prev)) {
-                err = string_add(postfix_exp, ' ');
-                if (err) {
-                    log_error("failed to push to the string");
-                    stack_free(operators);
-                    return err;
-                }
-            }
             while (1) {
                 err = stack_top(operators, &p_for_stack);
                 if (err != EXIT_SUCCESS && err != STACK_IS_EMPTY) {
@@ -239,26 +212,33 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
                 }
             }
         } else if (is_operand(ie)) {
-            err = string_add(postfix_exp, ie);
+            while (1) {
+                if (!is_operand(ie)) {
+                    break;
+                }
+                err = string_add(postfix_exp, ie);
+                if (err) {
+                    log_error("failed to push to the string");
+                    stack_free(operators);
+                    return err;
+                }
+                i++;
+                ie = infix_exp[i];
+            }
+            string_add(postfix_exp, ' ');
             if (err) {
                 log_error("failed to push to the string");
                 stack_free(operators);
                 return err;
             }
+            i--;
+            ie = infix_exp[i];
+            continue;
+
         } else if (ie != ' ') {
             log_error("invalid symbol '%c' found", ie);
             stack_free(operators);
             return INVALID_SYMBOL;
-        }
-        prev = ie;
-    }
-
-    if (is_operand(prev)) {
-        err = string_add(postfix_exp, ' ');
-        if (err) {
-            log_error("failed to push to the string");
-            stack_free(operators);
-            return err;
         }
     }
 
@@ -270,7 +250,9 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
             return err;
         }
         if (err == STACK_IS_EMPTY) {
-            break;
+            log_error("stack is empty, invalid braces placement");
+            stack_free(operators);
+            return INVALID_BRACES;
         }
         buffer = *(String *)p_for_stack->data;
 
@@ -304,7 +286,9 @@ err_t infix_to_postfix(const String infix_exp, int (*is_operand)(int c),
     }
 
     if (!stack_is_empty(operators)) {
-        log_error("transformation done, stack is not emtpy, invalid braces");
+        log_error(
+            "transformation done, stack is not emtpy, invalid braces, %zu",
+            operators->size);
         stack_free(operators);
         return INVALID_BRACES;
     }

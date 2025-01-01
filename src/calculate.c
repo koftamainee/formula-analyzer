@@ -7,6 +7,7 @@
 
 #include "../libc/cstring.h"
 #include "../libc/logger.h"
+#include "cli.h"
 #include "expression_tree.h"
 #include "postfix_notation.h"
 
@@ -43,10 +44,6 @@ int calculate_priorities(const String operator) {
         return 3;
     } else if (string_cmp_c(operator, "(") == 0) {
         return INT_MIN;
-    } else if (string_cmp_c(operator, "cos") == 0 ||
-               string_cmp_c(operator, "||") == 0) {
-        return 52;  // Example of custom priorities for multi-character
-                    // operators
     } else {
         return -1;  // Invalid operator
     }
@@ -66,17 +63,19 @@ int calculate_is_operator(const char *op) {
     return 0;
 }
 
-err_t process_calculate_file(FILE *fin) {
-    if (fin == NULL) {
+err_t process_calculate_file(file_to_process *file) {
+    if (file == NULL) {
         log_error("fin ptr is NULL");
         return DEREFERENCING_NULL_PTR;
     }
 
     char line[BUFSIZ];
     err_t err = 0;
-    size_t len = 0;
+    size_t len = 0, current_line = 0;
+    FILE *fout = NULL;
+    char error_filename[BUFSIZ];
 
-    while (fgets(line, sizeof(line), fin)) {
+    while (fgets(line, sizeof(line), file->data)) {
         len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') {
             line[len - 1] = '\0';  // delete '\n' symbol
@@ -84,11 +83,36 @@ err_t process_calculate_file(FILE *fin) {
         if (line[0] == '\0') {
             continue;
         }
+        printf("Processing %zu line in %s file: \n", current_line,
+               file->filename);
         err = process_calculate_line(line);
-        if (err) {
-            // TODO handle me correctly pls
+        if (err != EXIT_SUCCESS && err != INVALID_BRACES) {
+            if (fout != NULL) {
+                fclose(fout);
+            }
             return err;
         }
+        if (err == INVALID_BRACES) {
+            if (fout == NULL) {
+                sprintf(error_filename, "%s.errors", file->filename);
+                fout = fopen(error_filename, "w");
+                if (fout == NULL) {
+                    log_error("Error while openning file for errors");
+                    return OPENING_THE_FILE_ERROR;
+                }
+            }
+            fprintf(fout, "%s : %zu - Invalid braces placement error.\n",
+                    file->filename, current_line);
+            printf("Error occured. Skipping...\n");
+            current_line++;
+            continue;
+        }
+        printf("Ok.\n\n");
+        current_line++;
+    }
+
+    if (fout != NULL) {
+        fclose(fout);
     }
 
     return EXIT_SUCCESS;
@@ -96,7 +120,7 @@ err_t process_calculate_file(FILE *fin) {
 
 err_t process_calculate_line(char *line) {
     if (line == NULL) {
-        log_error("line ptr is NULL");
+        log_error("passed ptr is NULL");
         return DEREFERENCING_NULL_PTR;
     }
 
@@ -118,7 +142,9 @@ err_t process_calculate_line(char *line) {
 
     err = calculate_infix_to_postfix(infix, &postfix);
     if (err) {
-        // TODO create file and print runtime errors in there
+        string_free(infix);
+        string_free(postfix);
+        return err;
     }
 
     printf("Source: (inf) ");
@@ -128,12 +154,12 @@ err_t process_calculate_line(char *line) {
     printf("\n\n");
 
     // TODO: build arithmetic tree, calculate exp
-    err = expression_tree_fill_with_data_from_postfix_expression(
-        &tree, postfix, calculate_is_op_binary);
-
-    expression_tree_print(tree);
-
-    expression_tree_free(tree);
+    // err = expression_tree_fill_with_data_from_postfix_expression(
+    //     &tree, postfix, calculate_is_op_binary);
+    //
+    // expression_tree_print(tree);
+    //
+    // expression_tree_free(tree);
 
     string_free(infix);
     string_free(postfix);

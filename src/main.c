@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
         current_data = current->data;
         switch (current_data->op) {
             case calculate:
-                err = process_calculate_file(current_data->data);
+                err = process_calculate_file(current_data);
                 if (err) {
                     u_list_free(files);
                     return err;
