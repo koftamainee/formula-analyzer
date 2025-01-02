@@ -42,7 +42,7 @@ err_t parse_cli_arguments(u_list *files, int argc, char *argv[]) {
                 return OPENING_THE_FILE_ERROR;
             }
             fp.filename = argv[i];
-            err = u_list_insert(files, 0, &fp);
+            err = u_list_push_back(files, &fp);
             if (err) {
                 log_error("failed to push file to the list.");
                 fclose(fp.data);
