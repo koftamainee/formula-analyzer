@@ -9,6 +9,7 @@ typedef enum { unary, binary } operator_type;
 
 typedef struct {
     operator_type type;
+    int priority;
     int (*func)(int, ...);
 } operator_t;
 

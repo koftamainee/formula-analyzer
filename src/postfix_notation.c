@@ -10,13 +10,6 @@
 #include "../libc/types.h"
 #include "../libc/utils.h"
 
-// int operator_comparer(void const *first, void const *second) {
-//     return (*((operator_t **)first))->representation -
-//            (*((operator_t **)second))->representation;
-// }
-//
-//
-
 void postfix_notation_string_free(void *s) {
     String *st = s;
     string_free(*st);

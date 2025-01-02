@@ -312,12 +312,24 @@ err_t process_calculate_line(char *line, hash_table *operators,
 
     printf("Expression evalutation result: %d\n", res);
 
-    // TODO: build arithmetic tree, calculate exp
-    //
-    err = expression_tree_fill_with_data_from_postfix_expression(&tree, postfix,
-                                                                 operators);
-    expression_tree_print(tree);
-    expression_tree_free(tree);
+    if (string_len(postfix) > 0) {
+        // THIS IS UNSAFE OPERATION. it will segfaults if passed string is
+        // incorrect, calculate_postfix_expression validates string earlier
+        err = expression_tree_fill_with_data_from_postfix_expression(
+            &tree, postfix, operators);
+        if (err) {
+            string_free(infix);
+            string_free(postfix);
+            expression_tree_free(tree);
+            return err;
+        }
+        printf("Calculation tree: \n\n");
+        printf("-----------------\n\n");
+        expression_tree_print(tree);
+        printf("\n-----------------\n\n");
+
+        expression_tree_free(tree);
+    }
 
     string_free(infix);
     string_free(postfix);
