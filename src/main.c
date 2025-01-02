@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case table:
-                err = process_table_file(current_data->data);
+                err = process_table_file(current_data);
                 if (err) {
                     u_list_free(files);
                     return err;

@@ -187,7 +187,7 @@ err_t process_calculate_file(file_to_process *file) {
         if (line[0] == '\0') {
             continue;
         }
-        printf("Processing %zu line in %s file: \n", current_line,
+        printf("Processing %zu line in %s file: \n\n", current_line,
                file->filename);
         err = process_calculate_line(line, operators, operands);
         if (err != EXIT_SUCCESS && err != INVALID_BRACES &&
@@ -213,7 +213,7 @@ err_t process_calculate_file(file_to_process *file) {
             }
             fprintf(fout, "%s : %zu : [%s] - Invalid braces placement error.\n",
                     file->filename, current_line, line);
-            printf("Error occured. Skipping...\n");
+            printf("Error occured. Skipping...\n\n");
             current_line++;
             continue;
         } else if (err == INVALID_SYMBOL) {
@@ -229,7 +229,7 @@ err_t process_calculate_file(file_to_process *file) {
             }
             fprintf(fout, "%s : %zu : [%s] - Invalid symbol occurence error.\n",
                     file->filename, current_line, line);
-            printf("Error occured. Skipping...\n");
+            printf("Error occured. Skipping...\n\n");
             current_line++;
             continue;
         } else if (err == INVALID_OPERATIONS) {
@@ -247,7 +247,7 @@ err_t process_calculate_file(file_to_process *file) {
                     "%s : %zu : [%s] - Invalid operations and operands "
                     "combination.\n",
                     file->filename, current_line, line);
-            printf("Error occured. Skipping...\n");
+            printf("Error occured. Skipping...\n\n");
             current_line++;
             continue;
         }

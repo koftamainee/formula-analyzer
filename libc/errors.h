@@ -32,5 +32,6 @@ typedef int err_t;
 #define INVALID_BRACES (25)
 #define INVALID_SYMBOL (26)
 #define INVALID_OPERATIONS (27)
+#define INVALID_OPERAND (28)
 
 #endif
