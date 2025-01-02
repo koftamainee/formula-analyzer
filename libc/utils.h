@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "cstring.h"
 #include "errors.h"
 
 int is_file_empty(FILE *fp);
@@ -18,5 +19,7 @@ err_t remove_comments_from_line(char **line, int *in_comment,
                                 int comment_exit_symbol);
 
 err_t remove_spaces_from_line(char *line);
+
+int isdigit_s(const String num);
 
 #endif

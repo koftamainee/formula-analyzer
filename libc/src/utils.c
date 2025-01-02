@@ -1,5 +1,6 @@
 #include "../utils.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 
 int is_file_empty(FILE *fp) {
@@ -42,26 +43,25 @@ err_t binary_search_inner(void const *values, void const *value_to_find,
     size_t mediant_index;
     int comparison_result;
 
-    if (left_bound_inclusive >= right_bound_exclusive) {
-        return NO_SUCH_ENTRY_IN_COLLECTION;
+    while (left_bound_inclusive < right_bound_exclusive) {
+        mediant_index = left_bound_inclusive +
+                        ((right_bound_exclusive - left_bound_inclusive) >> 1);
+        comparison_result =
+            comparer(value_to_find,
+                     (unsigned char *)values + (mediant_index * value_size));
+
+        if (comparison_result == 0) {
+            *result_placement =
+                (void *)((unsigned char *)values + mediant_index * value_size);
+            return EXIT_SUCCESS;
+        } else if (comparison_result < 0) {
+            right_bound_exclusive = mediant_index;
+        } else {
+            left_bound_inclusive = mediant_index + 1;
+        }
     }
 
-    mediant_index = (left_bound_inclusive + right_bound_exclusive) >> 1;
-    comparison_result = comparer(
-        value_to_find, (unsigned char *)values + (mediant_index * value_size));
-
-    if (comparison_result == 0) {
-        *result_placement = (void *)values + mediant_index;
-        return EXIT_SUCCESS;
-    } else if (comparison_result < 0) {
-        right_bound_exclusive = mediant_index;
-    } else {
-        left_bound_inclusive = mediant_index + 1;
-    }
-
-    return binary_search_inner(values, value_to_find, value_size,
-                               left_bound_inclusive, right_bound_exclusive,
-                               comparer, result_placement);
+    return NO_SUCH_ENTRY_IN_COLLECTION;
 }
 
 err_t binary_search(void const *values, void const *value_to_find, size_t count,
@@ -69,7 +69,7 @@ err_t binary_search(void const *values, void const *value_to_find, size_t count,
                     int (*comparer)(void const *, void const *),
                     void **result_placement) {
     if (values == NULL || value_to_find == NULL || comparer == NULL ||
-        result_placement == NULL) {
+        result_placement == NULL || count == 0 || value_size == 0) {
         return DEREFERENCING_NULL_PTR;
     }
 
@@ -126,4 +126,18 @@ err_t remove_spaces_from_line(char *line) {
     *write_ptr = '\0';
 
     return EXIT_SUCCESS;
+}
+
+int isdigit_s(const String num) {
+    if (num == NULL) {
+        return -1;
+    }
+    size_t i = 0;
+
+    for (i = 0; i < string_len(num); ++i) {
+        if (!isdigit(num[i])) {
+            return 0;
+        }
+    }
+    return 1;
 }

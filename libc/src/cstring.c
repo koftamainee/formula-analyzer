@@ -63,6 +63,7 @@ int string_add(String *str, char c) {
 void string_print(String str) {
     int i;
     if (string_len(str) == 0) {
+        printf("(nil)");
         return;
     }
     for (i = 0; i < string_len(str); ++i) {
@@ -72,7 +73,6 @@ void string_print(String str) {
 
 int string_cmp(String str1, String str2) {
     size_t len1, len2;
-    // printf("STRING.H compare: %s %s\n", str1, str2);
     int i;
     len1 = string_len(str1);
     len2 = string_len(str2);
@@ -296,6 +296,7 @@ int string_grow(String *str, size_t new_size) {
     for_realloc->capacity = new_size;
     if (new_size < current_size) {
         for_realloc->length = new_size;
+        for_realloc->capacity = new_size;
     }
 
     return EXIT_SUCCESS;
