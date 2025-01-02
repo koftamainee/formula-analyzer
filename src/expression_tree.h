@@ -3,6 +3,7 @@
 
 #include "../libc/cstring.h"
 #include "../libc/errors.h"
+#include "../libc/hash_table.h"
 
 typedef struct expression_tree_node {
     String token;
@@ -12,11 +13,10 @@ typedef struct expression_tree_node {
 typedef expression_tree_node expression_tree;
 
 err_t expression_tree_init(expression_tree **t);
-void expression_tree_free(expression_tree *t);
+void expression_tree_free(void *t);
 
 err_t expression_tree_fill_with_data_from_postfix_expression(
-    expression_tree **t, const String postfix_exp,
-    int (*is_op_binary)(const String op));
+    expression_tree **t, const String postfix_exp, hash_table *operators);
 
 void expression_tree_print(expression_tree *t);
 
